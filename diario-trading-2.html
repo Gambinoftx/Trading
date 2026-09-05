@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diario de Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0E12;
+    --panel: #10151B;
+    --panel-2: #161D25;
+    --border: #232B33;
+    --text: #D7E1E8;
+    --muted: #7C8B98;
+    --cyan: #35C9C1;
+    --gain: #4FAE7C;
+    --loss: #D8637A;
+    --short-tag: #C98A4B;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    padding:18px 14px 60px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  header{ margin-bottom:16px; }
+  h1{
+    font-size:1.15rem;
+    font-weight:600;
+    margin:0 0 2px;
+    letter-spacing:0.01em;
+  }
+  .sub{ color:var(--muted); font-size:0.82rem; }
+
+  .stats{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    margin:14px 0 18px;
+  }
+  .stat{
+    background:var(--panel);
+    padding:10px 6px;
+    text-align:center;
+  }
+  .stat .v{ font-family:'IBM Plex Mono', monospace; font-size:1.05rem; font-weight:600; }
+  .stat .l{ color:var(--muted); font-size:0.68rem; margin-top:2px; }
+  .pos{ color:var(--gain); }
+  .neg{ color:var(--loss); }
+
+  form{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:18px;
+  }
+  .row{ display:flex; gap:8px; margin-bottom:9px; }
+  .row > div{ flex:1; }
+  label{
+    display:block;
+    font-size:0.72rem;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  input, select, textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:7px;
+    padding:8px 9px;
+    font-size:0.88rem;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  select{ font-family:'IBM Plex Sans', sans-serif; }
+  textarea{
+    font-family:'IBM Plex Sans', sans-serif;
+    resize:vertical;
+    min-height:44px;
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--cyan);
+  }
+  .dir-toggle{ display:flex; gap:6px; }
+  .dir-btn{
+    flex:1;
+    padding:8px 0;
+    text-align:center;
+    border:1px solid var(--border);
+    border-radius:7px;
+    font-size:0.85rem;
+    font-weight:500;
+    cursor:pointer;
+    background:var(--panel-2);
+    color:var(--muted);
+  }
+  .dir-btn.active-long{ border-color:var(--cyan); color:var(--cyan); background:rgba(53,201,193,0.08); }
+  .dir-btn.active-short{ border-color:var(--short-tag); color:var(--short-tag); background:rgba(201,138,75,0.08); }
+
+  button.submit{
+    width:100%;
+    background:var(--cyan);
+    color:#06201E;
+    border:none;
+    border-radius:7px;
+    padding:10px 0;
+    font-size:0.92rem;
+    font-weight:600;
+    margin-top:4px;
+    cursor:pointer;
+  }
+  button.submit:active{ opacity:0.85; }
+
+  .list-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+  .list-head h2{ font-size:0.9rem; font-weight:600; margin:0; }
+  .list-head span{ color:var(--muted); font-size:0.75rem; }
+
+  .trade{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    border-radius:9px;
+    padding:10px 12px;
+    margin-bottom:8px;
+  }
+  .trade.long{ border-left-color:var(--cyan); }
+  .trade.short{ border-left-color:var(--short-tag); }
+  .trade-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .trade-dir{ font-size:0.78rem; font-weight:600; }
+  .trade-dir.long{ color:var(--cyan); }
+  .trade-dir.short{ color:var(--short-tag); }
+  .trade-date{ color:var(--muted); font-size:0.72rem; }
+  .trade-r{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:0.95rem;
+  }
+  .trade-prices{
+    display:flex;
+    gap:12px;
+    margin-top:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--muted);
+  }
+  .trade-notes{
+    margin-top:6px;
+    font-size:0.8rem;
+    color:var(--text);
+    line-height:1.35;
+  }
+  .trade-del{
+    margin-top:8px;
+    font-size:0.72rem;
+    color:var(--muted);
+    text-decoration:underline;
+    cursor:pointer;
+    display:inline-block;
+  }
+
+  .empty{
+    color:var(--muted);
+    font-size:0.85rem;
+    text-align:center;
+    padding:30px 10px;
+    border:1px dashed var(--border);
+    border-radius:10px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:16px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:20px;
+    font-size:0.8rem;
+    opacity:0;
+    transition:opacity 0.25s, transform 0.25s;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Diario de Trading</h1>
+  <div class="sub">Registro de operaciones · guardado automático</div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<form id="form">
+  <div class="row">
+    <div style="flex:0.9">
+      <label>Fecha</label>
+      <input type="date" id="fecha" required>
+    </div>
+    <div>
+      <label>Dirección</label>
+      <div class="dir-toggle">
+        <div class="dir-btn active-long" id="btn-long" data-dir="long">Long</div>
+        <div class="dir-btn" id="btn-short" data-dir="short">Short</div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Entrada</label>
+      <input type="number" step="any" id="entrada" required>
+    </div>
+    <div>
+      <label>Stop</label>
+      <input type="number" step="any" id="stop" required>
+    </div>
+    <div>
+      <label>Salida</label>
+      <input type="number" step="any" id="salida" required>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Setup / contexto (squeeze, Fibo, rechazo…)</label>
+      <textarea id="notas" placeholder="Ej: squeeze pasando a turquesa en 15m, precio en 50% de mi Fibo, vela de rechazo previa"></textarea>
+    </div>
+  </div>
+  <button type="submit" class="submit">Guardar operación</button>
+</form>
+
+<div class="list-head">
+  <h2>Operaciones</h2>
+  <span id="count-label"></span>
+</div>
+
+<div id="list"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let direction = 'long';
+let trades = [];
+
+const $ = (id) => document.getElementById(id);
+
+$('btn-long').addEventListener('click', () => setDir('long'));
+$('btn-short').addEventListener('click', () => setDir('short'));
+
+function setDir(d){
+  direction = d;
+  $('btn-long').className = 'dir-btn' + (d === 'long' ? ' active-long' : '');
+  $('btn-short').className = 'dir-btn' + (d === 'short' ? ' active-short' : '');
+}
+
+$('fecha').valueAsDate = new Date();
+
+function showToast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function calcR(dir, entrada, stop, salida){
+  let riesgo, resultado;
+  if(dir === 'long'){
+    riesgo = entrada - stop;
+    resultado = salida - entrada;
+  } else {
+    riesgo = stop - entrada;
+    resultado = entrada - salida;
+  }
+  if(riesgo <= 0) return null;
+  return resultado / riesgo;
+}
+
+function loadTrades(){
+  try{
+    const saved = localStorage.getItem('diario15m_trades');
+    trades = saved ? JSON.parse(saved) : [];
+    if(!Array.isArray(trades)) trades = [];
+  } catch(e){
+    trades = [];
+    showToast('No se pudieron cargar los datos guardados');
+  }
+  render();
+}
+
+function saveTrades(){
+  try{
+    localStorage.setItem('diario15m_trades', JSON.stringify(trades));
+    return true;
+  } catch(e){
+    showToast('Error al guardar en este navegador');
+    return false;
+  }
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fecha = $('fecha').value;
+  const entrada = parseFloat($('entrada').value);
+  const stop = parseFloat($('stop').value);
+  const salida = parseFloat($('salida').value);
+  const notas = $('notas').value.trim();
+
+  const r = calcR(direction, entrada, stop, salida);
+  if(r === null){
+    showToast('Revisa el stop: el riesgo debe ser mayor que cero');
+    return;
+  }
+
+  const trade = {
+    id: Date.now().toString(),
+    fecha, dir: direction, entrada, stop, salida, notas, r
+  };
+  trades.unshift(trade);
+  saveTrades();
+  render();
+  showToast('Operación guardada');
+
+  $('form').reset();
+  $('fecha').valueAsDate = new Date();
+  setDir('long');
+});
+
+async function deleteTrade(id){
+  trades = trades.filter(t => t.id !== id);
+  saveTrades();
+  render();
+}
+
+function render(){
+  renderStats();
+  renderList();
+}
+
+function renderStats(){
+  const total = trades.length;
+  const wins = trades.filter(t => t.r > 0).length;
+  const winrate = total ? Math.round((wins / total) * 100) : 0;
+  const sumR = trades.reduce((a, t) => a + t.r, 0);
+  const avgR = total ? sumR / total : 0;
+
+  $('stats').innerHTML = `
+    <div class="stat"><div class="v">${total}</div><div class="l">operaciones</div></div>
+    <div class="stat"><div class="v">${winrate}%</div><div class="l">winrate</div></div>
+    <div class="stat"><div class="v mono ${avgR >= 0 ? 'pos' : 'neg'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</div><div class="l">R media</div></div>
+    <div class="stat"><div class="v mono ${sumR >= 0 ? 'pos' : 'neg'}">${sumR >= 0 ? '+' : ''}${sumR.toFixed(2)}R</div><div class="l">R acumulada</div></div>
+  `;
+}
+
+function renderList(){
+  $('count-label').textContent = trades.length ? trades.length + ' registradas' : '';
+  if(!trades.length){
+    $('list').innerHTML = '<div class="empty">Todavía no hay operaciones guardadas.<br>Registra la primera arriba.</div>';
+    return;
+  }
+  $('list').innerHTML = trades.map(t => `
+    <div class="trade ${t.dir}">
+      <div class="trade-top">
+        <div>
+          <span class="trade-dir ${t.dir}">${t.dir === 'long' ? 'LONG' : 'SHORT'}</span>
+          <span class="trade-date"> · ${t.fecha}</span>
+        </div>
+        <div class="trade-r ${t.r >= 0 ? 'pos' : 'neg'}">${t.r >= 0 ? '+' : ''}${t.r.toFixed(2)}R</div>
+      </div>
+      <div class="trade-prices">
+        <span>E ${t.entrada}</span>
+        <span>S ${t.stop}</span>
+        <span>Salida ${t.salida}</span>
+      </div>
+      ${t.notas ? `<div class="trade-notes">${escapeHtml(t.notas)}</div>` : ''}
+      <div class="trade-del" onclick="deleteTrade('${t.id}')">Eliminar</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadTrades();
+</script>
+</body>
+</html>
